@@ -1,0 +1,15 @@
+목표: convolution 없이 이미지 classification task에서 좋은 성능 나타내기 + MLP의 모델 구성에 따른 성능 비교 + 시각화
+
+성능 지표: acc, loss, r2 score 등
+
+규칙:
+1. 파라미터(or 뉴런의 수)의 양은 같아야 함.
+2. 평범한 MLP, width가 큰 MLP, depth가 큰 MLP, width가 1인 MLP, depth가 1인 MLP 등 다양한 MLP를 구현할 것
+3. loss, optimizer, 등은 동일(Adam)
+4. dataset은 cifar-100으로
+
+기록할 내용:
+모델 summary
+에폭시(배치)마다 train(test) loss, acc 구해서 txt파일로 저장
+에폭시마다 weight값 저장
+
