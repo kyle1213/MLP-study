@@ -5,8 +5,11 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import math
 from torchsummary import summary as summary_
 from tqdm import tqdm
+from torch import Tensor
+
 
 random_seed = 1234
 torch.manual_seed(random_seed)
@@ -31,23 +34,85 @@ test_loader = torch.utils.data.DataLoader(dataset=test, batch_size=128, shuffle=
 cuda = torch.device('cuda')
 
 
+class My_2D_Parameter(nn.Module):
+    """ Custom Linear layer but mimics a standard linear layer """
+    def __init__(self, size_in):
+        super(My_2D_Parameter, self).__init__()
+        self.size_in = size_in
+        bias = torch.Tensor(size_in)
+        self.weights = nn.Parameter(bias)
+
+        # initialize weights and biases
+        torch.nn.init.zeros_(self.weights)
+
+    def forward(self) -> Tensor:
+        return self.weights
+
+
+class My_3D_Parameter(nn.Module):
+    """ Custom Linear layer but mimics a standard linear layer """
+    def __init__(self, size_in, size_out):
+        super(My_3D_Parameter, self).__init__()
+        self.size_in, self.size_out = size_in, size_out
+        weights = torch.Tensor(size_in, size_out)
+        self.weights = nn.Parameter(weights)  # nn.Parameter is a Tensor that's a module parameter.
+
+        # initialize weights and biases
+        nn.init.kaiming_uniform_(self.weights, a=math.sqrt(5))
+
+    def forward(self) -> Tensor:
+        return self.weights
+
+
 class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.ws0 = torch.nn.Parameter(torch.randn().cuda())
-        self.bs0 = torch.nn.Parameter(torch.randn(512).cuda())
-        self.ws1 = torch.nn.Parameter(torch.randn(512).cuda())
-        self.bs1 = torch.nn.Parameter(torch.randn(512).cuda())
-        self.ws2 = torch.nn.Parameter(torch.randn(512).cuda())
-        self.bs2= torch.nn.Parameter(torch.randn(512).cuda())
-        self.layer_last = nn.Linear(1024, 10)
+        self.layer = nn.Linear(32*32*3, 512)
+        self.ws0 = My_2D_Parameter(512)
+        self.bs0 = My_2D_Parameter(512)
+        self.ws1 = My_2D_Parameter(512)
+        self.bs1 = My_2D_Parameter(512)
+        self.ws2 = My_2D_Parameter(512)
+        self.bs2 = My_2D_Parameter(512)
+        self.ws3 = My_2D_Parameter(512)
+        self.bs3 = My_2D_Parameter(512)
+        self.ws4 = My_2D_Parameter(512)
+        self.bs4 = My_2D_Parameter(512)
+        self.ws5 = My_2D_Parameter(512)
+        self.bs5 = My_2D_Parameter(512)
+        self.ws6 = My_2D_Parameter(512)
+        self.bs6 = My_2D_Parameter(512)
+        self.ws7 = My_2D_Parameter(512)
+        self.bs7 = My_2D_Parameter(512)
+        self.ws8 = My_2D_Parameter(512)
+        self.bs8 = My_2D_Parameter(512)
+        self.ws9 = My_2D_Parameter(512)
+        self.bs9 = My_2D_Parameter(512)
+        self.layer_last = nn.Linear(5120, 10)
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
         x = self.layer(x)
-        x1 = torch.mul(x, self.ws1) + self.bs1
-        x2 = torch.mul(x, self.ws2) + self.bs2
-        x = torch.cat((x1, x2), dim=1)
+        x0 = torch.mul(x, self.ws0()) + self.bs0()
+        x1 = torch.mul(x, self.ws1()) + self.bs1()
+        x2 = torch.mul(x, self.ws2()) + self.bs2()
+        x3 = torch.mul(x, self.ws3()) + self.bs3()
+        x4 = torch.mul(x, self.ws4()) + self.bs4()
+        x5 = torch.mul(x, self.ws5()) + self.bs5()
+        x6 = torch.mul(x, self.ws6()) + self.bs6()
+        x7 = torch.mul(x, self.ws7()) + self.bs7()
+        x8 = torch.mul(x, self.ws8()) + self.bs8()
+        x9 = torch.mul(x, self.ws9()) + self.bs9()
+        x = torch.cat((x0, x1), dim=1)
+        x = torch.cat((x, x2), dim=1)
+        x = torch.cat((x, x3), dim=1)
+        x = torch.cat((x, x4), dim=1)
+        x = torch.cat((x, x5), dim=1)
+        x = torch.cat((x, x6), dim=1)
+        x = torch.cat((x, x7), dim=1)
+        x = torch.cat((x, x8), dim=1)
+        x = torch.cat((x, x9), dim=1)
+
         x = nn.ReLU()(x)
         x = self.layer_last(x)
         return x
@@ -66,7 +131,7 @@ test_losses = []
 train_acc = []
 test_acc = []
 
-summary_(model,(3,32,32),batch_size=7)
+#summary_(model,(3,32,32),batch_size=7)
 
 for epoch in range(50):
     model.train()
