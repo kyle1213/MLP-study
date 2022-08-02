@@ -68,41 +68,91 @@ class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
         self.layer = nn.Linear(32*32*3, 512)
-        self.ws0 = My_2D_Parameter(512)
-        self.bs0 = My_2D_Parameter(512)
-        self.ws1 = My_2D_Parameter(512)
-        self.bs1 = My_2D_Parameter(512)
-        self.ws2 = My_2D_Parameter(512)
-        self.bs2 = My_2D_Parameter(512)
-        self.ws3 = My_2D_Parameter(512)
-        self.bs3 = My_2D_Parameter(512)
-        self.ws4 = My_2D_Parameter(512)
-        self.bs4 = My_2D_Parameter(512)
-        self.ws5 = My_2D_Parameter(512)
-        self.bs5 = My_2D_Parameter(512)
-        self.ws6 = My_2D_Parameter(512)
-        self.bs6 = My_2D_Parameter(512)
-        self.ws7 = My_2D_Parameter(512)
-        self.bs7 = My_2D_Parameter(512)
-        self.ws8 = My_2D_Parameter(512)
-        self.bs8 = My_2D_Parameter(512)
-        self.ws9 = My_2D_Parameter(512)
-        self.bs9 = My_2D_Parameter(512)
+        self.ws0 = My_2D_Parameter(512)()
+        self.bs0 = My_2D_Parameter(512)()
+        self.ws1 = My_2D_Parameter(512)()
+        self.bs1 = My_2D_Parameter(512)()
+        self.ws2 = My_2D_Parameter(512)()
+        self.bs2 = My_2D_Parameter(512)()
+        self.ws3 = My_2D_Parameter(512)()
+        self.bs3 = My_2D_Parameter(512)()
+        self.ws4 = My_2D_Parameter(512)()
+        self.bs4 = My_2D_Parameter(512)()
+        self.ws5 = My_2D_Parameter(512)()
+        self.bs5 = My_2D_Parameter(512)()
+        self.ws6 = My_2D_Parameter(512)()
+        self.bs6 = My_2D_Parameter(512)()
+        self.ws7 = My_2D_Parameter(512)()
+        self.bs7 = My_2D_Parameter(512)()
+        self.ws8 = My_2D_Parameter(512)()
+        self.bs8 = My_2D_Parameter(512)()
+        self.ws9 = My_2D_Parameter(512)()
+        self.bs9 = My_2D_Parameter(512)()
         self.layer_last = nn.Linear(5120, 10)
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
         x = self.layer(x)
-        x0 = torch.mul(x, self.ws0()) + self.bs0()
-        x1 = torch.mul(x, self.ws1()) + self.bs1()
-        x2 = torch.mul(x, self.ws2()) + self.bs2()
-        x3 = torch.mul(x, self.ws3()) + self.bs3()
-        x4 = torch.mul(x, self.ws4()) + self.bs4()
-        x5 = torch.mul(x, self.ws5()) + self.bs5()
-        x6 = torch.mul(x, self.ws6()) + self.bs6()
-        x7 = torch.mul(x, self.ws7()) + self.bs7()
-        x8 = torch.mul(x, self.ws8()) + self.bs8()
-        x9 = torch.mul(x, self.ws9()) + self.bs9()
+        ws0 = self.ws0.unsqueeze(0)
+        bs0 = self.bs0.unsqueeze(0)
+        for i in range(128-1):
+            ws0 = torch.cat((ws0, self.ws0.unsqueeze(0)), dim=0)
+            bs0 = torch.cat((bs0, self.bs0.unsqueeze(0)), dim=0)
+        x0 = torch.mul(x, self.ws0) + self.bs0
+        ws1 = self.ws1.unsqueeze(0)
+        bs1 = self.bs1.unsqueeze(0)
+        for i in range(128 - 1):
+            ws1 = torch.cat((ws1, self.ws1.unsqueeze(0)), dim=0)
+            bs1 = torch.cat((bs1, self.bs1.unsqueeze(0)), dim=0)
+        x1 = torch.mul(x, self.ws1) + self.bs1
+        ws2 = self.ws2.unsqueeze(0)
+        bs2 = self.bs2.unsqueeze(0)
+        for i in range(128 - 1):
+            ws2 = torch.cat((ws2, self.ws2.unsqueeze(0)), dim=0)
+            bs2 = torch.cat((bs2, self.bs2.unsqueeze(0)), dim=0)
+        x2 = torch.mul(x, self.ws2) + self.bs2
+        ws3 = self.ws3.unsqueeze(0)
+        bs3 = self.bs3.unsqueeze(0)
+        for i in range(128 - 1):
+            ws3 = torch.cat((ws3, self.ws3.unsqueeze(0)), dim=0)
+            bs3 = torch.cat((bs3, self.bs3.unsqueeze(0)), dim=0)
+        x3 = torch.mul(x, self.ws3) + self.bs3
+        ws4 = self.ws0.unsqueeze(0)
+        bs4 = self.bs0.unsqueeze(0)
+        for i in range(128 - 1):
+            ws4 = torch.cat((ws4, self.ws4.unsqueeze(0)), dim=0)
+            bs4 = torch.cat((bs4, self.bs4.unsqueeze(0)), dim=0)
+        x4 = torch.mul(x, self.ws4) + self.bs4
+        ws5 = self.ws0.unsqueeze(0)
+        bs5 = self.bs0.unsqueeze(0)
+        for i in range(128 - 1):
+            ws5 = torch.cat((ws5, self.ws5.unsqueeze(0)), dim=0)
+            bs5 = torch.cat((bs5, self.bs5.unsqueeze(0)), dim=0)
+        x5 = torch.mul(x, self.ws5) + self.bs5
+        ws6 = self.ws0.unsqueeze(0)
+        bs6 = self.bs0.unsqueeze(0)
+        for i in range(128 - 1):
+            ws6 = torch.cat((ws6, self.ws6.unsqueeze(0)), dim=0)
+            bs6 = torch.cat((bs6, self.bs6.unsqueeze(0)), dim=0)
+        x6 = torch.mul(x, self.ws6) + self.bs6
+        ws7 = self.ws0.unsqueeze(0)
+        bs7 = self.bs0.unsqueeze(0)
+        for i in range(128 - 1):
+            ws7 = torch.cat((ws7, self.ws7.unsqueeze(0)), dim=0)
+            bs7 = torch.cat((bs7, self.bs7.unsqueeze(0)), dim=0)
+        x7 = torch.mul(x, self.ws7) + self.bs7
+        ws8 = self.ws0.unsqueeze(0)
+        bs8 = self.bs0.unsqueeze(0)
+        for i in range(128 - 1):
+            ws8 = torch.cat((ws8, self.ws8.unsqueeze(0)), dim=0)
+            bs8 = torch.cat((bs8, self.bs8.unsqueeze(0)), dim=0)
+        x8 = torch.mul(x, self.ws8) + self.bs8
+        ws9 = self.ws9.unsqueeze(0)
+        bs9 = self.bs9.unsqueeze(0)
+        for i in range(128 - 1):
+            ws9 = torch.cat((ws9, self.ws9.unsqueeze(0)), dim=0)
+            bs9 = torch.cat((bs9, self.bs9.unsqueeze(0)), dim=0)
+        x9 = torch.mul(x, self.ws9) + self.bs9
         x = torch.cat((x0, x1), dim=1)
         x = torch.cat((x, x2), dim=1)
         x = torch.cat((x, x3), dim=1)
