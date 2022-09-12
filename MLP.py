@@ -34,11 +34,15 @@ cuda = torch.device('cuda')
 class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.layer = nn.Sequential(nn.Linear(32*32*3, 512),
-                                     nn.ReLU(True),
-                                     nn.Linear(512, 512),
-                                     nn.ReLU(True),
-                                     nn.Linear(512, 10))
+        self.layer = nn.Sequential(
+            nn.Linear(32*32*3, 1024),
+            nn.ReLU(True),
+            nn.Linear(1024, 1024),
+            nn.ReLU(True),
+            nn.Linear(1024, 1024),
+            nn.ReLU(True),
+            nn.Linear(1024, 10)
+        )
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
@@ -61,7 +65,7 @@ test_acc = []
 
 summary_(model,(3,32,32),batch_size=7)
 
-for epoch in range(50):
+for epoch in range(150):
     model.train()
     correct = 0
     for X, Y in tqdm(train_loader):
@@ -115,3 +119,9 @@ plt.plot(range(1, len(iterations)+1), train_acc, 'b-')
 plt.plot(range(1, len(iterations)+1), test_acc, 'r-')
 plt.title('loss and accuracy')
 plt.show()
+
+with open("MLP.txt", "w") as f:
+    f.write(str(train_losses))
+    f.write(str(test_losses))
+    f.write(str(train_acc))
+    f.write(str(test_acc))

@@ -40,7 +40,7 @@ class My_2D_Parameter(nn.Module):
         super(My_2D_Parameter, self).__init__()
         self.size_in = size_in
         bias = torch.Tensor(size_in)
-        self.weights = nn.Parameter(bias, requires_grad=True)
+        self.weights = nn.Parameter(bias)
 
         # initialize weights and biases
         torch.nn.init.zeros_(self.weights)
@@ -55,7 +55,8 @@ class My_3D_Parameter(nn.Module):
         super(My_3D_Parameter, self).__init__()
         self.size_in, self.size_out = size_in, size_out
         weights = torch.Tensor(size_in, size_out)
-        self.weights = nn.Parameter(weights, requires_grad=True)  # nn.Parameter is a Tensor that's a module parameter.
+        self.weights = nn.Parameter(weights)  # nn.Parameter is a Tensor that's a module parameter.
+
         # initialize weights and biases
         nn.init.kaiming_uniform_(self.weights, a=math.sqrt(5))
 
@@ -109,27 +110,51 @@ class MLP(nn.Module):
     def __init__(self, branch_num):
         super(MLP, self).__init__()
         self.branch_num = branch_num
-        self.layer = nn.Linear(32*32*3, 512)
-        self.ws = My_3D_Parameter(self.branch_num, 512)().cuda()
-        self.bs = My_3D_Parameter(self.branch_num, 512)().cuda()
-        self.layer_last = nn.Linear(self.branch_num*512, 10)
+        self.layer0 = nn.Linear(32*32*3, 128)
+        self.ws0 = My_3D_Parameter(self.branch_num, 128)()
+        self.bs0 = My_3D_Parameter(self.branch_num, 128)()
+        self.layer1 = nn.Linear(self.branch_num*128, 128)
+        self.ws1 = My_3D_Parameter(self.branch_num, 128)()
+        self.bs1 = My_3D_Parameter(self.branch_num, 128)()
+        self.layer_last = nn.Linear(self.branch_num*128, 10)
+        self.register_parameter(name='custom_ws0', param=self.ws0)
+        self.register_parameter(name='custom_bs0', param=self.bs0)
+        self.register_parameter(name='custom_ws1', param=self.ws1)
+        self.register_parameter(name='custom_bs1', param=self.bs1)
 
-    def forward(self, x, batch_len, before_ws):
+    def forward(self, x, batch_len):
         x = x.view(x.size(0), -1)
-        x = self.layer(x)
+
+        x = self.layer0(x)
+        x = nn.ReLU()(x)
+
         for i in range(self.branch_num):
-            tmp = torch.mul(x, self.ws[i]) + self.bs[i]
+            tmp = torch.mul(x, self.ws0[i]) + self.bs0[i]
             if i == 0:
                 x0 = tmp.unsqueeze(-1)
             elif i > 0:
                 x1 = tmp
                 x0 = torch.cat((x0, x1.unsqueeze(-1)), dim=2)
         x = x0.permute(0, 2, 1)
-        x = torch.reshape(x, (batch_len, self.branch_num*512))
+        x = torch.reshape(x, (batch_len, self.branch_num*128))
         x = nn.ReLU()(x)
-        print(self.ws - before_ws)
+
+        x = self.layer1(x)
+        x = nn.ReLU()(x)
+
+        for i in range(self.branch_num):
+            tmp = torch.mul(x, self.ws1[i]) + self.bs1[i]
+            if i == 0:
+                x0 = tmp.unsqueeze(-1)
+            elif i > 0:
+                x1 = tmp
+                x0 = torch.cat((x0, x1.unsqueeze(-1)), dim=2)
+        x = x0.permute(0, 2, 1)
+        x = torch.reshape(x, (batch_len, self.branch_num * 128))
+        x = nn.ReLU()(x)
+
         x = self.layer_last(x)
-        return x, self.ws
+        return x
 
 model = MLP(branch_num=32)
 model = model.cuda()
@@ -145,15 +170,15 @@ train_acc = []
 test_acc = []
 
 #summary_(model,(3,32,32),batch_size=7)
-before_ws=0
-for epoch in range(50):
+
+for epoch in range(150):
     model.train()
     correct = 0
     for X, Y in tqdm(train_loader):
         X = X.to(cuda)
         Y = Y.to(cuda)
         optimizer.zero_grad()
-        hypo, before_ws = model(X, len(X), before_ws)
+        hypo = model(X, len(X))
         #hypo = model(X)
         cost = loss(hypo, Y)
         cost.backward()
@@ -201,3 +226,9 @@ plt.plot(range(1, len(iterations)+1), train_acc, 'b-')
 plt.plot(range(1, len(iterations)+1), test_acc, 'r-')
 plt.title('loss and accuracy')
 plt.show()
+
+with open("multi_tree.txt", "w") as f:
+    f.write(str(train_losses))
+    f.write(str(test_losses))
+    f.write(str(train_acc))
+    f.write(str(test_acc))

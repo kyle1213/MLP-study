@@ -63,14 +63,6 @@ class My_3D_Parameter(nn.Module):
         return self.weights
 
 
-def make_sequential(num):
-    layers = []
-    for i in range(num):
-        layers.append(nn.Linear(1, 1))
-        layers.append(nn.ReLU(True))
-
-    return nn.Sequential(*layers)
-
 """ # double loop method
 class MLP(nn.Module):
     def __init__(self):
@@ -109,14 +101,14 @@ class MLP(nn.Module):
     def __init__(self, branch_num):
         super(MLP, self).__init__()
         self.branch_num = branch_num
-        self.layer = nn.Linear(32*32*3, 512)
-        self.ws = My_3D_Parameter(self.branch_num, 512)().cuda()
-        self.bs = My_3D_Parameter(self.branch_num, 512)().cuda()
+        self.ws0 = My_3D_Parameter(self.branch_num, 512)()
+        self.bs0 = My_3D_Parameter(self.branch_num, 512)()
         self.layer_last = nn.Linear(self.branch_num*512, 10)
+        self.register_parameter(name='custom_ws0', param=self.ws0)
+        self.register_parameter(name='custom_bs0', param=self.bs0)
 
-    def forward(self, x, batch_len, before_ws):
+    def forward(self, x, batch_len):
         x = x.view(x.size(0), -1)
-        x = self.layer(x)
         for i in range(self.branch_num):
             tmp = torch.mul(x, self.ws[i]) + self.bs[i]
             if i == 0:
@@ -126,14 +118,13 @@ class MLP(nn.Module):
                 x0 = torch.cat((x0, x1.unsqueeze(-1)), dim=2)
         x = x0.permute(0, 2, 1)
         x = torch.reshape(x, (batch_len, self.branch_num*512))
-        x = nn.ReLU()(x)
-        print(self.ws - before_ws)
-        x = self.layer_last(x)
-        return x, self.ws
+        x = nn.LeakyReLU()(x)
+        return x
 
-model = MLP(branch_num=32)
+model = MLP(branch_num=43)
 model = model.cuda()
-
+for p in model.parameters():
+    print(p, p.shape)
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4, betas=(0.9, 0.999))
 cost = 0
@@ -145,15 +136,15 @@ train_acc = []
 test_acc = []
 
 #summary_(model,(3,32,32),batch_size=7)
-before_ws=0
-for epoch in range(50):
+
+for epoch in range(150):
     model.train()
     correct = 0
     for X, Y in tqdm(train_loader):
         X = X.to(cuda)
         Y = Y.to(cuda)
         optimizer.zero_grad()
-        hypo, before_ws = model(X, len(X), before_ws)
+        hypo = model(X, len(X))
         #hypo = model(X)
         cost = loss(hypo, Y)
         cost.backward()
