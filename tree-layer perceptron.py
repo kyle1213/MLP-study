@@ -40,7 +40,7 @@ class My_2D_Parameter(nn.Module):
         super(My_2D_Parameter, self).__init__()
         self.size_in = size_in
         bias = torch.Tensor(size_in)
-        self.weights = nn.Parameter(bias)
+        self.weights = nn.Parameter(bias, requires_grad=True)
 
         # initialize weights and biases
         torch.nn.init.zeros_(self.weights)
@@ -55,22 +55,13 @@ class My_3D_Parameter(nn.Module):
         super(My_3D_Parameter, self).__init__()
         self.size_in, self.size_out = size_in, size_out
         weights = torch.Tensor(size_in, size_out)
-        self.weights = nn.Parameter(weights)  # nn.Parameter is a Tensor that's a module parameter.
-
+        self.weights = nn.Parameter(weights, requires_grad=True)  # nn.Parameter is a Tensor that's a module parameter.
         # initialize weights and biases
         nn.init.kaiming_uniform_(self.weights, a=math.sqrt(5))
 
     def forward(self) -> Tensor:
         return self.weights
 
-
-def make_sequential(num):
-    layers = []
-    for i in range(num):
-        layers.append(nn.Linear(1, 1))
-        layers.append(nn.ReLU(True))
-
-    return nn.Sequential(*layers)
 
 """ # double loop method
 class MLP(nn.Module):
@@ -111,13 +102,16 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.branch_num = branch_num
         self.layer = nn.Linear(32*32*3, 512)
-        self.ws = My_3D_Parameter(self.branch_num, 512)().cuda()
-        self.bs = My_3D_Parameter(self.branch_num, 512)().cuda()
+        self.ws = My_3D_Parameter(self.branch_num, 512)()
+        self.bs = My_3D_Parameter(self.branch_num, 512)()
         self.layer_last = nn.Linear(self.branch_num*512, 10)
+        self.register_parameter(name='custom_ws', param=self.ws)
+        self.register_parameter(name='custom_bs', param=self.bs)
 
     def forward(self, x, batch_len):
         x = x.view(x.size(0), -1)
         x = self.layer(x)
+        x = nn.LeakyReLU()(x)
         for i in range(self.branch_num):
             tmp = torch.mul(x, self.ws[i]) + self.bs[i]
             if i == 0:
@@ -127,13 +121,14 @@ class MLP(nn.Module):
                 x0 = torch.cat((x0, x1.unsqueeze(-1)), dim=2)
         x = x0.permute(0, 2, 1)
         x = torch.reshape(x, (batch_len, self.branch_num*512))
-        x = nn.ReLU()(x)
+        x = nn.LeakyReLU()(x)
         x = self.layer_last(x)
         return x
 
-model = MLP(branch_num=1)
+model = MLP(branch_num=32)
 model = model.cuda()
-
+for p in model.parameters():
+    print(p, p.shape)
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4, betas=(0.9, 0.999))
 cost = 0
@@ -146,7 +141,7 @@ test_acc = []
 
 #summary_(model,(3,32,32),batch_size=7)
 
-for epoch in range(50):
+for epoch in range(150):
     model.train()
     correct = 0
     for X, Y in tqdm(train_loader):
@@ -201,3 +196,9 @@ plt.plot(range(1, len(iterations)+1), train_acc, 'b-')
 plt.plot(range(1, len(iterations)+1), test_acc, 'r-')
 plt.title('loss and accuracy')
 plt.show()
+
+with open("tree.txt", "w") as f:
+    f.write(str(train_losses))
+    f.write(str(test_losses))
+    f.write(str(train_acc))
+    f.write(str(test_acc))
